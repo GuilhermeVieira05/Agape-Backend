@@ -1,0 +1,109 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Estados {
+  AC // Acre
+  AL // Alagoas
+  AP // Amapá
+  AM // Amazonas
+  BA // Bahia
+  CE // Ceará
+  DF // Distrito Federal
+  ES // Espírito Santo
+  GO // Goiás
+  MA // Maranhão
+  MT // Mato Grosso
+  MS // Mato Grosso do Sul
+  MG // Minas Gerais
+  PA // Pará
+  PB // Paraíba
+  PR // Paraná
+  PE // Pernambuco
+  PI // Piauí
+  RJ // Rio de Janeiro
+  RN // Rio Grande do Norte
+  RS // Rio Grande do Sul
+  RO // Rondônia
+  RR // Roraima
+  SC // Santa Catarina
+  SP // São Paulo
+  SE // Sergipe
+  TO // Tocantins
+}
+
+model Endereco {
+  id          Int     @id @default(autoincrement())
+  cep         String  @db.VarChar(8)
+  rua         String  @db.VarChar(255)
+  numero      Int     @db.Integer
+  complemento String? @db.VarChar(255)
+  bairro      String  @db.VarChar(255)
+  estado      Estados
+  cidade      String  @db.VarChar(255)
+  pais        String  @db.VarChar(255)
+
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [cpf])
+
+  obraId Int?  @unique
+  obra   Obra? @relation(fields: [obraId], references: [id])
+}
+
+model User {
+  cpf      String   @id @db.VarChar(11)
+  nome     String   @db.VarChar(255)
+  dataNasc DateTime @map("data_nascimento") @db.Date
+  email    String   @unique @db.VarChar(255)
+  telefone String   @db.VarChar(200)
+  password String   @db.VarChar(50)
+
+  endereco Endereco?
+  Serve    Serve[]
+}
+
+model Obra {
+  id       Int       @id @default(autoincrement())
+  nome     String    @db.VarChar(100)
+  servicos Servico[]
+
+  endereco Endereco?
+  Serve    Serve[]
+}
+
+model Servico {
+  id     Int    @id @default(autoincrement())
+  nome   String @db.VarChar(200)
+  obraId Int    @map("obra_id")
+  obra   Obra   @relation(fields: [obraId], references: [id])
+  Serve  Serve[]
+
+  @@unique([obraId, nome])
+}
+
+model Serve {
+  usuarioCpf String @unique
+  usuario    User   @relation(fields: [usuarioCpf], references: [cpf])
+
+  obraId Int  @unique
+  obra   Obra @relation(fields: [obraId], references: [id])
+
+  servicoId Int     @unique
+  servico   Servico @relation(fields: [servicoId], references: [id])
+
+  cargo String @db.VarChar(100)
+
+  @@id([usuarioCpf, obraId, servicoId]) // Chave primária composta
+}
